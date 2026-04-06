@@ -1,1 +1,11 @@
-node_modules
+# ENV FILES (Frontend + Backend)
+
+.env
+client/.env
+server/.env
+
+# NODE MODULES
+
+node_modules/
+client/node_modules/
+server/node_modules/

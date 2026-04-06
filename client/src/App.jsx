@@ -23,6 +23,7 @@ const App = () => {
     <>
      <Toaster />
       {showLogin && < Login/>}
+      
       {!isOwnerPath && <Navbar/>}
 
       <Routes>

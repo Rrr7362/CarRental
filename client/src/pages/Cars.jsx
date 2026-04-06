@@ -30,7 +30,7 @@ const Cars = () => {
     }
 
     const filtered = cars.slice().filter((car)=>{
-      return car.brand.toLowerCase().inculdes(input.toLowerCase()) || car.model.toLowerCase().inculdes(input.toLowerCase()) || car.category.toLowerCase().inculdes(input.toLowerCase()) || car.transmission.toLowerCase().inculdes(input.toLowerCase())
+      return car.brand.toLowerCase().includes(input.toLowerCase()) || car.model.toLowerCase().includes(input.toLowerCase()) || car.category.toLowerCase().includes(input.toLowerCase()) || car.transmission.toLowerCase().includes(input.toLowerCase())
     })
     setFilteredCars(filtered)
   }

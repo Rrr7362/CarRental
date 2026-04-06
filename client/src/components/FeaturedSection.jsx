@@ -9,7 +9,7 @@ import { motion } from 'motion/react'
 const FeaturedSection = () => {
 
     const navigate = useNavigate()
-    const {cars} = useAppContext()
+    const {cars} = useAppContext() 
 
   return (
     <motion.div
