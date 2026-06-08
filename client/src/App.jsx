@@ -12,8 +12,11 @@ import Dashboard from './pages/owner/Dashboard';
 import ManageBookings from './pages/owner/ManageBookings';
 import ManageCars from './pages/owner/ManageCars';
 import Login from './components/Login';
-import { Toaster } from 'react-hot-toast'
+import { Toaster } from 'react-hot-toast';
 import { useAppContext } from '../context/AppContext';
+import PaymentSuccess from "./pages/PaymentSuccess"; 
+import PaymentFailed from "./pages/PaymentFailed";
+
 
 
 const App = () => {
@@ -37,6 +40,8 @@ const App = () => {
          <Route path="manage-cars" element={<ManageCars/>}/>
          <Route path="manage-bookings" element={<ManageBookings/>}/>
         </Route>
+        <Route path="/payment-success" element={<PaymentSuccess />}/>
+        <Route path="/payment-failed" element={<PaymentFailed />} />
       </Routes>
       
 

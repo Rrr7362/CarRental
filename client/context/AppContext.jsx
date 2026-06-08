@@ -45,13 +45,13 @@ export const AppProvider = ({ children })=>{
         }
     }
 
-    // Function to log the user
+    // Function to logout the user
     const logout = () => {
         localStorage.removeItem('token')
         setToken(null)
         setUser(null)
         setIsOwner(false)
-        axios.defaults.headers.common['Authorization'] = ''
+        delete axios.defaults.headers.common['Authorization']
         toast.success('You have been logged out')
     }
 
@@ -66,7 +66,7 @@ export const AppProvider = ({ children })=>{
     // useEffect to fetch user data when token is Available
     useEffect(()=>{
         if(token){
-            axios.defaults.headers.common['Authorization'] = `${token}`
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
             fetchUser()
         }
     },[token])

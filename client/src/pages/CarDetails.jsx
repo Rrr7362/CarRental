@@ -16,6 +16,7 @@ const CarDetails = () => {
   const navigate = useNavigate()
   const [car, setCar] = useState(null)
   const currency = import.meta.env.VITE_CURRENCY
+  const [paymentMethod, setPaymentMethod] = useState("cod");
 
   const handleSubmit = async (e)=>{
    e.preventDefault();
@@ -23,7 +24,8 @@ const CarDetails = () => {
     const {data} = await axios.post('/api/bookings/create', {
       car: id,
       pickupDate,
-      returnDate
+      returnDate,
+      paymentMethod
     })
 
     if (data.success){
@@ -142,6 +144,46 @@ const CarDetails = () => {
             <input value={returnDate} onChange={(e)=> setReturnDate(e.target.value)}
             type="date" className='borber borber-borderColor px-3 py-2 rounded-lg' required id='return-date'/>
           </div>
+        
+        
+        <div className="mt-4">
+
+        <label className="font-medium">
+          Select Payment Method
+        </label>
+
+      <div className="flex gap-4 mt-2">
+
+          <label className="flex items-center gap-2">
+            <input
+                type="radio"
+                value="cod"
+                checked={paymentMethod === "cod"}
+                onChange={(e) =>
+                  setPaymentMethod(e.target.value)
+                }
+            />
+
+            Cash on Delivery
+          </label>
+
+          <label className="flex items-center gap-2">
+            <input
+                type="radio"
+                value="online"
+                checked={paymentMethod === "online"}
+                onChange={(e) =>
+                  setPaymentMethod(e.target.value)
+                }
+            />
+
+            Online Payment
+          </label>
+
+      </div>
+
+
+      </div>
 
           <button className='w-full bg-primary hover:bg-primary-dull transition-all py-3 font-medium text-white rounded-xl cursor-pointer'>Book Now</button>
 

@@ -3,6 +3,10 @@ import { assets } from '../assets/assets'
 import Title from '../components/Title'
 import { useAppContext } from '../../context/AppContext'
 import {motion} from 'motion/react'
+import { toast }
+from "react-hot-toast";
+
+
 
 const MyBookings = () => {
 
@@ -23,6 +27,49 @@ const MyBookings = () => {
       
     }
   }
+
+  const handleStripePayment =
+async (bookingId) => {
+
+   try {
+
+      const { data } =
+      await axios.post(
+
+         "/api/payments/create-checkout-session",
+
+         {
+            bookingId
+         }
+      );
+
+      // =========================
+      // ERROR
+      // =========================
+
+      if (!data.success) {
+
+         return toast.error(
+            data.message
+         );
+      }
+
+      // =========================
+      // REDIRECT TO STRIPE
+      // =========================
+
+      window.location.href =
+         data.url;
+
+   } catch (error) {
+
+      console.log(error);
+
+      toast.error(
+         error.message
+      );
+   }
+};
 
   useEffect(()=>{
     user && fetchMyBookings()
@@ -61,7 +108,7 @@ const MyBookings = () => {
          <div className='md:col-span-2'>
           <div className='flex items-center gap-2'>
             <p className='px-3 py-1.5 bg=light rounded'>Booking #{index+1}</p>
-            <p className={`px-3 py-1 text-xs rounded-full ${booking.status === 'confirmed' ? 'bg-green-400/15 text-green-600' : 'bg-red-400/15 text-red-600'}`}>{booking.status}</p>
+            <p className={`px-3 py-1 text-xs rounded-full ${booking.bookingStatus === 'confirmed' ? 'bg-green-400/15 text-green-600' : 'bg-red-400/15 text-red-600'}`}>{booking.bookingStatus}</p>
           </div>
 
 
@@ -81,6 +128,8 @@ const MyBookings = () => {
             </div>
           </div>
          </div>
+
+        
          
         {/* Price */}
         <div className='md:col-span-1 flex flex-col justify-between gap-6'>
@@ -88,6 +137,24 @@ const MyBookings = () => {
            <p>Total Price</p>
            <h1>{currency}{booking.price}</h1>
            <p>Booked on {booking.createdAt.split('T')[0]}</p>
+           <p> Booking Status: {booking.bookingStatus} </p> {/* NEW  */}
+           <p> Payment Status: {booking.paymentStatus} </p> {/* NEW  */}
+
+          {
+          booking.bookingStatus === "awaiting_payment" && booking.paymentMethod ==="online" && (
+              <button
+                onClick={() =>
+                    handleStripePayment(
+                      booking._id
+                    )
+                }
+                className="bg-black text-white px-4 py-2 rounded mt-2"
+              >
+                Pay Now
+              </button>
+          )
+          }
+           
           </div>
         </div>
 

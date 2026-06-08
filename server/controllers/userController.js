@@ -5,8 +5,8 @@ import Car from "../models/Car.js"
 
 // Generate jwt token
 const generateToken = (userId)=> {
-    const payload = userId;
-    return jwt.sign(payload, process.env.JWT_SECRET)
+    const payload = userId; // string or js object store multiple things like role, email ,etc...
+    return jwt.sign(payload, process.env.JWT_SECRET )
 }
 
 // Register User
@@ -35,17 +35,20 @@ export const registerUser = async (req,res)=> {
     }
 }
 
-// Login User
+//Login User
 export const loginUser = async (req,res)=>{
     try {
         const {email, password} = req.body
+        // if(!email || !password){
+        //     return res.json({success:false,message:"All fields required"})
+        // }
         const user = await User.findOne({email})
         if(!user){
             return res.json({success: false, message: "User not found" })
         }
         const isMatch = await bcrypt.compare(password, user.password)
         if(!isMatch){
-            return res.json({success: false, message: "Invalid Credentials" })
+            return res.json({success: false, message: "Invalid email or password" })
         }
         const token = generateToken(user._id.toString())
         res.json({success: true, token})
@@ -55,6 +58,38 @@ export const loginUser = async (req,res)=>{
         res.json({success: false, message: error.message})
     }
 }
+
+// export const loginUser = async (req,res)=>{
+//     try {
+//         const {email, password} = req.body
+
+//         console.log("LOGIN HIT");
+//         console.log("Email:", email);
+
+//         const user = await User.findOne({email})
+
+//         if(!user){
+//             console.log("User not found");
+//             return res.json({success: false, message: "User not found"})
+//         }
+
+//         const isMatch = await bcrypt.compare(password, user.password)
+
+//         console.log("Password Match:", isMatch);
+
+//         if(!isMatch){
+//             return res.json({success: false, message: "Invalid credentials"})
+//         }
+
+//         const token = generateToken(user._id.toString())
+
+//         res.json({success: true, token})
+
+//     } catch (error) {
+//         console.log(error.message);
+//         res.json({success: false, message: error.message})
+//     }
+// }
 
 
 // Getr user data using token( JWT )

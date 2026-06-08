@@ -5,27 +5,94 @@ import fs from "fs";
 import Car from "../models/Car.js";
 
 // Change role
-export const changeRoleToOwner = async (req,res)=>{
-    try {
-        const {_id} = req.user;
-        await User.findByIdAndUpdate(_id, {role: "owner"})
-        res.json({success: true, message: "Now you can list cars"})
-    } catch (error) {
-        console.log(error.message);
-        res.json({success: false, message: error.message})
-    }
-}
+// export const changeRoleToOwner = async (req,res)=>{
+//     try {
+//         const {_id} = req.user;
+//         await User.findByIdAndUpdate(_id, {role: "owner"})
+//         res.json({success: true, message: "Now you can list cars"})
+//     } catch (error) {
+//         console.log(error.message);
+//         res.json({success: false, message: error.message})
+//     }
+// }
+
+export const changeRoleToOwner =
+async (req, res) => {
+
+   try {
+
+      // =========================
+      // GET TARGET USER ID
+      // =========================
+
+      const { userId } = req.body;
+
+      // =========================
+      // UPDATE TARGET USER
+      // =========================
+
+      const updatedUser =
+      await User.findByIdAndUpdate(
+
+         userId,
+
+         {
+            role: "owner"
+         },
+
+         {
+            new: true
+         }
+      );
+
+      // =========================
+      // RESPONSE
+      // =========================
+
+      res.json({
+
+         success: true,
+
+         message:
+         "User role updated to owner",
+
+         user: updatedUser
+      });
+
+   } catch (error) {
+
+      console.log(error.message);
+
+      res.json({
+
+         success: false,
+
+         message: error.message
+      });
+   }
+};
+
+//     Improvement	Benefit
+//     if(!user)	Prevent crash
+//    role check	Avoid unnecessary update
+//     return user	frontend sync
+//     save()	    cleaner logic
+// You may want:
+// Admin approval
+// Payment
+// Verification
 
 // API to list Car
-
 export const addCar = async (req,res)=>{
     try {
         const {_id} = req.user;
         let car = JSON.parse(req.body.carData);
         const imageFile = req.file;
+        // JSON.parse
 
         // Upload Image to Imagekit
         const fileBuffer = fs.readFileSync(imageFile.path)
+        //Reads file from local storage Converts image → binary data (buffer)
         const response = await imageKit.upload({
             file: fileBuffer,
             fileName: imageFile.originalname,
@@ -96,6 +163,7 @@ export const deleteCar = async (req,res)=>{
         const {_id} = req.user;
         const {carId} = req.body
         const car = await Car.findById(carId)
+        
 
         // Checking is car belongs to the user
         if(car.owner.toString() !== _id.toString()){
@@ -126,11 +194,11 @@ export const getDashboardData = async (req,res) => {
         const cars = await Car.find({owner: _id})
         const bookings = await Booking.find({owner: _id}).populate('car').sort({ createdAt: -1});
 
-        const pendingBookings = await Booking.find({owner: _id, status: "pending" })
-        const completedBookings = await Booking.find({owner: _id, status: "pending" })
+        const pendingBookings = await Booking.find({owner: _id, bookingStatus: "awaiting_payment" })
+        const completedBookings = await Booking.find({owner: _id, $or: [{ paymentStatus: "paid" },{ paymentStatus: "cod" }]})
 
         // Calculate monthlyRevenue from bookings where status is confirmed
-        const monthlyRevenue = bookings.slice().filter(booking => booking.status === 'confirmed').reduce((acc, booking)=> acc + booking.price, 0)
+        const monthlyRevenue = bookings.slice().filter(booking => booking.paymentStatus === 'paid'  || booking.paymentStatus ==="cod").reduce((acc, booking)=> acc + booking.price, 0)
 
         const dashboardData = {
             totalCars: cars.length,
