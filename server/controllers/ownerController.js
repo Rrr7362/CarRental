@@ -21,52 +21,26 @@ async (req, res) => {
 
    try {
 
-      // =========================
-      // GET TARGET USER ID
-      // =========================
-
       const { userId } = req.body;
-
-      // =========================
-      // UPDATE TARGET USER
-      // =========================
 
       const updatedUser =
       await User.findByIdAndUpdate(
-
          userId,
-
-         {
-            role: "owner"
-         },
-
-         {
-            new: true
-         }
+         {role: "owner"},
+         {new: true}
       );
 
-      // =========================
-      // RESPONSE
-      // =========================
-
       res.json({
-
          success: true,
-
          message:
          "User role updated to owner",
-
          user: updatedUser
       });
 
    } catch (error) {
-
       console.log(error.message);
-
       res.json({
-
          success: false,
-
          message: error.message
       });
    }

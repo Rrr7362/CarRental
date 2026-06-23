@@ -13,60 +13,99 @@ import Car from "../models/Car.js";
 // }
 
 // NEW CODE
-const checkAvailability = async (
-    car,
-    pickupDate,
-    returnDate
-) => {
-
+const checkAvailability = async (carId,pickupDate,returnDate) => {
     const bookings = await Booking.find({
-        car,
-
+        car: carId ,
         bookingStatus: {
-            $in: [
-                "pending",
-                "awaiting_payment",
-                "confirmed"
-            ]
-        },
-
-        pickupDate: {
-            $lte: returnDate
-        },
-
-        returnDate: {
-            $gte: pickupDate
-        }
+            $in: ["pending","awaiting_payment","confirmed"]},
+        pickupDate: { $lte: returnDate },
+        returnDate: { $gte: pickupDate }
     });
 
     return bookings.length === 0;
 };
 
 // Api to Check Availability of cars for the given Date and location
-export const checkAvailabilityOfCar = async (req,res)=>{
+export const checkAvailabilityOfCar = async (req, res) => {
     try {
-        const {location, pickupDate, returnDate} = req.body
+        const { location, pickupDate, returnDate } = req.body;
 
-        // fetch all available cars for the given location
-        const cars = await Car.find({location, isAvailable: true})
+        // Query 1: Fetch all cars in location
+        const cars = await Car.find({
+            location,
+            isAvailable: true
+        });
 
-        // check car availability for the given date range using promise
-        const availableCarsPromise = cars.map(async (car)=> {
-            const isAvailable = await checkAvailability(car._id, pickupDate, returnDate)
-            return {...car._doc, isAvailable: isAvailable}
-        })
+        if (!cars.length) {
+            return res.json({
+                success: true,
+                availableCars: []
+            });
+        }
 
-        let availableCars = await Promise.all(availableCarsPromise);
-        availableCars = availableCars.filter(car => car.isAvailable === true)
+        // Extract all car ids
+        const carIds = cars.map(car => car._id);
 
-        res.json({success: true, availableCars})
+        // Query 2: Fetch all conflicting bookings at once
+        const conflictingBookings = await Booking.find({
+            car: { $in: carIds },
+            bookingStatus: {
+                $in: ["pending", "awaiting_payment", "confirmed"]
+            },
+            pickupDate: { $lte: returnDate },
+            returnDate: { $gte: pickupDate }
+        }).select("car");
 
+        // Create set for O(1) lookup
+        const conflictingCarIds = new Set(
+            conflictingBookings.map(
+                booking => booking.car.toString()
+            )
+        );
+
+        // Filter available cars in memory
+        const availableCars = cars.filter(
+            car => !conflictingCarIds.has(car._id.toString())
+        );
+
+        res.json({
+            success: true,
+            availableCars
+        });
 
     } catch (error) {
         console.log(error.message);
-        res.json({success: false, message: error.message})
+        res.json({
+            success: false,
+            message: error.message
+        });
     }
-} // Initially I used Promise.all to check availability per car, but that leads to N+1 queries, so I optimized it by querying overlapping bookings once and filtering cars in memory, reducing database load significantly.”
+};
+
+// export const checkAvailabilityOfCar = async (req,res)=>{
+//     try {
+//         const {location, pickupDate, returnDate} = req.body
+
+//         // fetch all available cars for the given location
+//         const cars = await Car.find({location, isAvailable: true})
+
+//         // check car availability for the given date range using promise
+//         const availableCarsPromise = cars.map(async (car)=> {
+//             const isAvailable = await checkAvailability(car._id, pickupDate, returnDate)
+//             return {...car._doc, isAvailable: isAvailable}
+//         })
+
+//         let availableCars = await Promise.all(availableCarsPromise);
+//         availableCars = availableCars.filter(car => car.isAvailable === true)
+
+//         res.json({success: true, availableCars})
+
+
+//     } catch (error) {
+//         console.log(error.message);
+//         res.json({success: false, message: error.message})
+//     }
+// } // Initially I used Promise.all to check availability per car, but that leads to N+1 queries, so I optimized it by querying overlapping bookings once and filtering cars in memory, reducing database load significantly.”
 
 
 // API to Create Booking
@@ -105,31 +144,17 @@ export const createBooking = async (req, res) => {
     try {
 
         const { _id } = req.user;
-
-        const {
-            car,
-            pickupDate,
-            returnDate,
-            paymentMethod
+        const {car,pickupDate,returnDate,paymentMethod
         } = req.body;
-
-        // =========================
-        // PAYMENT METHOD VALIDATION
-        // =========================
-
+        
         if (!["online", "cod"].includes(paymentMethod)) {
             return res.json({
                 success: false,
                 message: "Invalid payment method"
             });
         }
-
-        // =========================
-        // DATE VALIDATION
-        // =========================
-
+        
         const today = new Date();
-
         const pickup = new Date(pickupDate);
         const returned = new Date(returnDate);
 
@@ -146,51 +171,23 @@ export const createBooking = async (req, res) => {
                 message: "Return date must be after pickup date"
             });
         }
-
-        // =========================
-        // AVAILABILITY CHECK
-        // =========================
-
-        const isAvailable = await checkAvailability(
-            car,
-            pickupDate,
-            returnDate
-        );
+        
+        const isAvailable = await checkAvailability(car,pickupDate,returnDate);
 
         if (!isAvailable) {
-            return res.json({
-                success: false,
-                message: "Car is not available"
-            });
+            return res.json({success: false,message: "Car is not available"});
         }
-
-        // =========================
-        // GET CAR DATA
-        // =========================
-
+        
         const carData = await Car.findById(car);
 
         if (!carData) {
-            return res.json({
-                success: false,
-                message: "Car not found"
-            });
+            return res.json({success: false,message: "Car not found"});
         }
-
-        // =========================
-        // PRICE CALCULATION
-        // =========================
-
-        const noOfDays = Math.ceil(
-            (returned - pickup) / (1000 * 60 * 60 * 24)
-        );
+        
+        const noOfDays = Math.ceil((returned - pickup) / (1000 * 60 * 60 * 24));
 
         const price = carData.pricePerDay * noOfDays;
-
-        // =========================
-        // CREATE BOOKING
-        // =========================
-
+        
         await Booking.create({
             car,
             owner: carData.owner,
@@ -198,9 +195,7 @@ export const createBooking = async (req, res) => {
             pickupDate,
             returnDate,
             price,
-
             paymentMethod,
-
             bookingStatus: "pending",
             paymentStatus: "pending"
         });
@@ -219,9 +214,7 @@ export const createBooking = async (req, res) => {
             message: error.message
         });
     }
-
-    // Race Condition - Double Booking
-};
+}
 
 // API to List User Bookings
 export const getUserBookings = async (req, res)=>{
@@ -241,9 +234,6 @@ export const getUserBookings = async (req, res)=>{
 // API to getOwnerBookings 
 export const getOwnerBookings = async (req,res)=>{
     try {
-        if(req.user.role !== 'owner'){
-            return res.json({ success: false, message: "Unauthorized" })
-        }
         const { _id } = req.user;
         const bookings = await Booking.find({owner: _id}).populate('car user').select("-user.password").sort({createdAt: -1 })
         res.json({success: true, bookings})

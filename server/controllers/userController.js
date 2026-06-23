@@ -7,6 +7,7 @@ import Car from "../models/Car.js"
 const generateToken = (userId)=> {
     const payload = userId; // string or js object store multiple things like role, email ,etc...
     return jwt.sign(payload, process.env.JWT_SECRET )
+    // expiresIn: '30d',
 }
 
 // Register User
@@ -39,9 +40,9 @@ export const registerUser = async (req,res)=> {
 export const loginUser = async (req,res)=>{
     try {
         const {email, password} = req.body
-        // if(!email || !password){
-        //     return res.json({success:false,message:"All fields required"})
-        // }
+        if(!email || !password){
+            return res.json({success:false,message:"All fields required"})
+        }
         const user = await User.findOne({email})
         if(!user){
             return res.json({success: false, message: "User not found" })
@@ -93,14 +94,8 @@ export const loginUser = async (req,res)=>{
 
 
 // Getr user data using token( JWT )
-export const getUserData = async (req,res) => {
-    try {
-        const {user} = req;
-        res.json({success: true, user})
-    } catch (error) {
-        console.log(error.message);
-        res.json({success: false, message: error.message})
-    }
+export const getUserData = (req,res) => {
+        res.json({success: true, user: req.user})
 }
 
 
@@ -109,8 +104,10 @@ export const getCars = async (req,res) => {
     try {
         const cars = await Car.find({isAvailable: true})
         res.json({success: true, cars})
+        // await Car.find({isAvailable: true}).select('brand model year pricePerDay image location');
     } catch (error) {
         console.log(error.message);
         res.json({success: false, message: error.message})
     }
 }
+
